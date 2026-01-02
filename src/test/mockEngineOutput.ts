@@ -1,57 +1,57 @@
-import type { EngineOutput } from '../engine/types'
+// src/test/mockEngineOutput.ts
+import type { EngineSnapshot } from "../engine/types";
 
-export function mockEngineOutput(ticker: string): EngineOutput {
-  const now = Date.now()
-  const seed = ticker.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
-  const tis = Math.min(92, Math.max(12, (seed % 70) + 25))
-
-  const structureState: EngineOutput['structure']['state'] = tis > 88 ? 'DEGRADED' : 'INTACT'
-  const harvestMode = tis >= 60
+export function mockEngineSnapshot(ticker: string): EngineSnapshot {
+  const t = (ticker || "MOCK").toUpperCase();
 
   return {
-    ticker,
-    ts: now,
-    structure: {
-      state: structureState,
-      confidence: structureState === 'INTACT' ? 84 : 66,
-      reason: structureState === 'INTACT'
-        ? 'VWAP support holding; structure accepted.'
-        : 'Extension risk rising; watch acceptance.',
+    ticker: t,
+    ts: new Date().toISOString(),
+    price: 5.23,
+
+    p_up: 0.62,
+    ev: 0.18,
+    tier: 2,
+    sizePct: 50,
+
+    zones: {
+      buyZone: {
+        lo: 5.05,
+        hi: 5.18,
+        rationale: ["Pullback into demand gap", "σ-regime favorable", "VWAP reclaim bias"],
+      },
+      invalidation: {
+        price: 4.92,
+        rationale: ["Structure breaks + VWAP loss", "Demand gap fails"],
+      },
+      tpLadder: [
+        { level: 5.45, pctTrim: 15, label: "TP1", rationale: ["First supply shelf"] },
+        { level: 5.70, pctTrim: 20, label: "TP2", rationale: ["Prior high magnet"] },
+        { level: 6.10, pctTrim: 25, label: "TP3", rationale: ["Extension harvest zone (+15%)"] },
+      ],
     },
-    entry: {
-      primaryBuy: { low: 4.02, high: 4.08 },
-      secondaryBuy: { low: 3.94, high: 3.99 },
-      invalidBelow: 3.88,
-    },
-    momentum: {
-      delta1k: 2400,
-      delta5k: 7100,
-      deltaSlope: 'UP',
-      conversionEfficiency: 0.63,
-      hiddenMomentum: true,
-      summary: 'Buy pressure accelerating faster than price.',
-    },
+
     trim: {
-      tis,
-      harvestMode,
-      nextTrimWindow: harvestMode ? 'NOW' : 'NOT_APPLICABLE',
-      trimNowPctOrig: harvestMode ? Math.min(35, Math.max(8, Math.round((tis - 55) * 0.6))) : undefined,
-      reasons: harvestMode
-        ? ['Conversion slowing', 'Liquidity thinning detected', 'Runner probability still elevated']
-        : ['No harvest signal'],
+      tis: 63,
+      nextTrimWindow: "NOW",
+      trimNowPctOrig: 15,
+      harvestMode: true,
+      reasons: ["TIS≥60 (trim box)", "+15% extension harvest", "Ask liquidity risk rising"],
     },
-    targets: {
-      tp1: 4.12,
-      tp2: 4.20,
-      tp3: 4.32,
-      runnerProbability: 0.58,
-      massiveBreakout: true,
+
+    micro: {
+      obeScore: 78,
+      bidAskImbalance: 0.31,
+      thinAsk: false,
+      thinBid: false,
+      notes: ["Order book stable; no emergency exit condition detected"],
     },
-    liquidity: {
-      mode: 'PROXY',
-      bidAskRatio: 0.86,
-      thinWarning: tis > 72,
-      spoofRisk: tis > 80,
-    },
-  }
+
+    headline: "Hold bias. Trim suggested in momentum only.",
+    bullets: [
+      "Exit only on invalidation / math collapse (rule).",
+      "Trim intensity elevated; harvest mode active beyond +15%.",
+      "No L2/L3 vacuum-triggered 'sell all' condition detected.",
+    ],
+  };
 }
