@@ -1,45 +1,32 @@
-export type StructureState = 'INTACT' | 'DEGRADED' | 'FAILED'
-export type NextTrimWindow = 'NOW' | 'WAITING_FOR_MOMENTUM' | 'NOT_APPLICABLE'
-export type PriceRange = { low: number; high: number }
+export type EngineSnapshot = {
+  ticker: string;
 
-export interface EngineOutput {
-  ticker: string
-  ts: number
+  price: number;
 
-  structure: { state: StructureState; confidence: number; reason: string }
+  bias: "bullish" | "neutral" | "bearish";
 
-  entry: { primaryBuy: PriceRange; secondaryBuy?: PriceRange; invalidBelow: number }
+  probability_up: number; // 0–1
+  expected_value: number;
 
-  momentum: {
-    delta1k: number
-    delta5k: number
-    deltaSlope: 'UP' | 'FLAT' | 'DOWN'
-    conversionEfficiency: number // 0..1
-    hiddenMomentum: boolean
-    summary: string
-  }
+  tier: number; // 0–4
+
+  buy_zones: {
+    low: number;
+    high: number;
+  }[];
+
+  take_profit_zones: {
+    price: number;
+    confidence: number;
+  }[];
+
+  stop_loss: number;
 
   trim: {
-    tis: number // 0..100
-    harvestMode: boolean
-    nextTrimWindow: NextTrimWindow
-    trimNowPctOrig?: number
-    plannedTrimPctOrig?: number
-    reasons: string[]
-  }
+    tis: number; // Trim Intensity Score (0–100)
+    suggested_trim_pct: number; // % of initial position
+    reason: string;
+  };
 
-  targets: {
-    tp1: number
-    tp2: number
-    tp3?: number
-    runnerProbability: number // 0..1
-    massiveBreakout: boolean
-  }
-
-  liquidity: {
-    mode: 'L2' | 'PROXY'
-    bidAskRatio: number
-    thinWarning: boolean
-    spoofRisk: boolean
-  }
-}
+  structure_valid: boolean;
+};
