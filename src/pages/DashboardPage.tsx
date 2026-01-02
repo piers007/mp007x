@@ -1,38 +1,49 @@
-import { useMemo, useState } from 'react'
-import { Shell } from '../ui/Shell'
-import { TickerInput } from '../ui/TickerInput'
-import { WatchlistStrip } from '../ui/WatchlistStrip'
-import { EngineCardStack } from '../ui/EngineCardStack'
-import { mockEngineOutput } from '../test/mockEngineOutput'
+import { useEffect, useState } from "react";
+import { fetchSnapshot } from "../api/knoxClient";
+import type { EngineSnapshot } from "../engine/types";
 
-export function DashboardPage() {
-  const [tickers, setTickers] = useState<string[]>(['NVDA', 'TSLA', 'SPY'])
-  const [active, setActive] = useState<string>('NVDA')
+export default function DashboardPage() {
+  const [ticker, setTicker] = useState("AAPL");
+  const [data, setData] = useState<EngineSnapshot | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const out = useMemo(() => mockEngineOutput(active), [active])
-
-  function addTicker(t: string) {
-    const T = t.trim().toUpperCase()
-    if (!T) return
-    setTickers((prev) => (prev.includes(T) ? prev : [T, ...prev]))
-    setActive(T)
+  async function load() {
+    setLoading(true);
+    try {
+      const snapshot = await fetchSnapshot(ticker);
+      setData(snapshot);
+    } finally {
+      setLoading(false);
+    }
   }
 
+  useEffect(() => {
+    load();
+  }, []);
+
   return (
-    <Shell title="Knox 007" subtitle="Cards-first intraday decision engine">
-      <TickerInput onSubmit={addTicker} />
-      <WatchlistStrip
-        tickers={tickers}
-        active={active}
-        onSelect={setActive}
-        meta={(t) => ({
-          bias: t === active ? 'BULL' : 'NEUTRAL',
-          tis: t === active ? out.trim.tis : 28,
-          structure: t === active ? out.structure.state : 'INTACT',
-          pct: t === active ? '+2.1%' : '+0.4%',
-        })}
-      />
-      <EngineCardStack output={out} />
-    </Shell>
-  )
+    <div className="p-4 space-y-4">
+      <div className="flex gap-2">
+        <input
+          value={ticker}
+          onChange={(e) => setTicker(e.target.value.toUpperCase())}
+          className="bg-black/40 border border-white/10 rounded px-3 py-2"
+        />
+        <button
+          onClick={load}
+          className="bg-purple-600/80 hover:bg-purple-600 px-4 py-2 rounded"
+        >
+          Load
+        </button>
+      </div>
+
+      {loading && <div>Loading…</div>}
+
+      {data && (
+        <pre className="text-xs bg-black/50 p-3 rounded">
+          {JSON.stringify(data, null, 2)}
+        </pre>
+      )}
+    </div>
+  );
 }
