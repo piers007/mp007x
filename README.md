@@ -1,29 +1,82 @@
-# Knox 007 — React Starter (v0.1)
+# Knox 007 — Backend
 
-This is a **mobile-first, cards-first** React + TypeScript starter for Knox 007.
+Institutional-grade intraday trading engine backend.
 
-## Stack
-- Vite + React + TS
-- Tailwind (optional) + Knox morphism CSS tokens
-- Zustand (state)
-- Framer Motion (micro-motion)
-- Lightweight Charts (optional, chart not default)
+This service powers the Knox 007 frontend by exposing a single,
+deterministic decision endpoint.
 
-## Run (local)
-```bash
-npm install
-npm run dev
-```
+---
 
-## Core rule
-- **Math engine lives outside UI** (future `/src/engine/math/*`).
-- UI consumes only the backend contract: `POST /v1/analyze`.
+## 🚀 Stack
 
-## What you get
-- Dashboard page
-- Ticker input (Enter to add)
-- Watchlist strip
-- Card stack: Structure / Entry / Momentum / Trim (TIS) / Targets / Liquidity
+- FastAPI (Python)
+- Render.com deployment
+- GitHub source of truth
+- Frontend: React (separate repo)
 
-## Next
-Wire `VITE_API_BASE_URL` to your Render backend.
+---
+
+## 📡 API
+### Health Check
+
+GET /api/health
+### Engine Snapshot
+
+POST /api/007/snapshot
+Input:
+```json
+{
+  "ticker": "AAPL"
+}
+
+Output:
+	•	Bias
+	•	Probability
+	•	Buy zones
+	•	Take profit zones
+	•	Trim Intensity Score (TIS)
+	•	Structural risk flags
+	•	Narrative explanation
+
+⸻
+
+🔒 Design Rules
+	•	No frontend math
+	•	No chart-based decisions
+	•	All logic lives server-side
+	•	Deterministic, explainable output
+	•	Intraday only
+
+🛠 Local Run
+pip install -r requirements.txt
+uvicorn main:app --reload
+
+🧠 Philosophy
+
+Knox does not sell hope.
+
+Knox sells probability, structure, and discipline.
+
+---
+
+## ✅ Final root structure (confirm this)
+
+knox-007-backend/
+├── main.py          ✅
+├── requirements.txt
+├── start.sh
+├── apps.json
+└── README.md
+
+If this is what you see in GitHub → **Render will deploy cleanly**.
+
+---
+
+### Next steps (when ready)
+- Wire frontend `/snapshot` fetch
+- Add versioned `/engine/` math modules
+- Add structured changelog auto-write
+
+Just say **“next”**.
+
+
