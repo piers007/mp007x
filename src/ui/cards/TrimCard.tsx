@@ -1,40 +1,61 @@
-import type { EngineOutput } from '../../engine/types'
+// src/ui/cards/TrimCard.tsx
+import React from "react";
+import type { EngineSnapshot } from "../../engine/types";
 
-export function TrimCard(props: { trim: EngineOutput['trim'] }) {
-  const t = props.trim
-  const fill = Math.max(0, Math.min(100, t.tis))
+type Props = {
+  snap: EngineSnapshot;
+};
+
+export default function TrimCard({ snap }: Props) {
+  const t = snap.trim;
+
+  const prettyWindow =
+    t.nextTrimWindow === "NOW" ? "Now" :
+    t.nextTrimWindow === "SOON" ? "Soon" : "Wait";
+
+  const tis = Math.max(0, Math.min(100, t.tis || 0));
+  const fillStyle: React.CSSProperties = { width: `${tis}%` };
+
+  const showTrimBox = tis >= 60 && typeof t.trimNowPctOrig === "number";
 
   return (
-    <div className="knox-card">
+    <div className="card">
       <div className="card-header">
-        <span className="card-title">Trim Intensity</span>
-        <span className="badge purple">TIS {t.tis}%</span>
+        <div className="card-title">Trim Intensity</div>
+        <span className="badge purple">TIS {tis}%</span>
       </div>
 
-      <div className="gauge">
-        <div className="fill" style={{ width: `${fill}%` }} />
+      <div className="gauge" aria-label="Trim Intensity Gauge">
+        <div className="fill" style={fillStyle} />
       </div>
 
-      <div style={{ marginTop: 10 }}>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>{t.harvestMode ? 'Harvest Mode: ON' : 'Harvest Mode: OFF'}</div>
-        <div style={{ marginTop: 6, color: 'var(--text-secondary)', fontSize: 13 }}>
-          Next Trim Window: {t.nextTrimWindow.replaceAll('_', ' ')}
+      <div style={{ marginTop: 10, fontSize: 13, color: "var(--text-secondary)" }}>
+        Next Trim Window: <strong style={{ color: "var(--text-primary)" }}>{prettyWindow}</strong>
+      </div>
+
+      {t.harvestMode ? (
+        <div style={{ marginTop: 6 }} className="badge green">
+          Extension Harvest Mode (+15%)
         </div>
-      </div>
+      ) : null}
 
-      {t.nextTrimWindow === 'NOW' && typeof t.trimNowPctOrig === 'number' && (
-        <div className="trim-overlay">
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)', letterSpacing: 0.6, textTransform: 'uppercase' }}>
-            Trim Suggested
+      {showTrimBox ? (
+        <div className="trim-overlay" style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+            Trim Suggested (momentum only)
           </div>
           <div style={{ marginTop: 6, fontSize: 16 }}>
-            Trim <strong>{t.trimNowPctOrig}%</strong> of original size
+            Trim <strong>{t.trimNowPctOrig}%</strong> of original position
           </div>
-          <div style={{ marginTop: 6, color: 'var(--text-secondary)', fontSize: 12 }}>
-            • {t.reasons.slice(0, 3).join(' • ')}
+          <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-secondary)" }}>
+            • {t.reasons.slice(0, 3).join(" • ")}
           </div>
+        </div>
+      ) : (
+        <div style={{ marginTop: 10, fontSize: 12, color: "var(--text-secondary)" }}>
+          • {t.reasons.slice(0, 3).join(" • ")}
         </div>
       )}
     </div>
-  )
+  );
 }
