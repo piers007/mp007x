@@ -1,121 +1,89 @@
-// src/engine/types.ts
+export type AnalyzeMode = "INTRADAY" | "SWING";
 
-export type Tier = 0 | 1 | 2 | 3 | 4 | 5;
-
-export type TrimWindow = 'NOW' | 'NEXT_5M' | 'NEXT_15M' | 'NEXT_30M' | 'LATER';
-
-export type ZoneLine = {
-  label: string;
-  price: number;
-  pctFromPrice?: number;
-  kind?: 'support' | 'resistance' | 'gap' | 'tp' | 'sl' | 'vwap' | 'pdh' | 'pdl' | 'cdh' | 'cdl';
+export type AnalyzeRequest = {
+  ticker: string;
+  as_of?: string;
+  mode?: AnalyzeMode;
 };
+
+export type DecisionState = "BUY" | "HOLD" | "NO_TRADE" | "TRIM" | "EXIT";
+export type Bias = "BULLISH" | "BEARISH" | "NEUTRAL";
+
+export type Decision = {
+  state: DecisionState;
+  bias: Bias;
+  confidence: number;
+  p_up: number;
+  ev_r: number;
+  tier: number;
+  size_pct: number;
+  pillar_agreement: number;
+};
+
+export type EntryZone = { price: number; strength: "HIGH" | "MED" | "LOW"; why: string };
+export type TakeProfit = { price: number; trim_pct_of_initial: number; reason: string; tis: number };
+export type StopZone = { price: number; stop_mult: number; reason: string };
+export type Extension = { runner_mode: boolean; target: number; reason: string };
 
 export type Zones = {
-  price?: number;
-
-  // Core zones
-  buyZone?: { low: number; high: number };
-  support?: number;
-  resistance?: number;
-
-  // Optional level sets
-  demandGaps?: ZoneLine[];
-  takeProfits?: ZoneLine[];
-  stopLoss?: ZoneLine;
-
-  // Day levels
-  prevDayHigh?: number;
-  prevDayLow?: number;
-  currDayHigh?: number;
-  currDayLow?: number;
-
-  // Any extra horizontal levels
-  levels?: ZoneLine[];
+  entry: EntryZone[];
+  take_profit: TakeProfit[];
+  stop: StopZone;
+  extension: Extension;
 };
 
-export type TrimSignal = {
-  nextTrimWindow: TrimWindow;
-  trimNowPctOrig?: number;
-  reasons: string[];
+export type TrimBox = {
+  active: boolean;
+  suggested_trim_pct_of_initial: number;
+  reason: string;
 };
 
-export type EntryBlock = {
-  price?: number;
-  stop?: number;
-  invalidation?: number;
-  notes?: string[];
+export type Trim = {
+  tis: number; // 0-100
+  next_trim_window_sec: number;
+  trim_box: TrimBox;
 };
 
-export type MomentumBlock = {
-  score: number; // 0–100
-  notes?: string[];
+export type Structure = {
+  structure_health: number;
+  exit_only_if: "STRUCTURE_FAIL";
+  fail_reasons: string[];
 };
 
-export type StructureBlock = {
-  score: number; // 0–100
-  notes?: string[];
+export type LiquidityMap = { void_zones: any[]; absorption_shelves: any[] };
+
+export type Flow = {
+  delta_state: "ACCELERATING" | "NEUTRAL" | "EXHAUSTING" | "UNKNOWN";
+  orderbook_state: "BID_DOMINANT" | "ASK_DOMINANT" | "THINNING_BID" | "THINNING_ASK" | "UNKNOWN";
+  liquidity_map: LiquidityMap;
 };
 
-export type LiquidityBlock = {
-  score: number; // 0–100
-  notes?: string[];
+export type Veto = { engine: string; type: "soft" | "hard"; reason_code: string; note: string };
+export type Driver = { name: string; score: number; direction: -1 | 1 };
+
+export type Explain = {
+  bullets: string[];
+  vetoes: Veto[];
+  top_drivers: Driver[];
 };
 
-export type TargetsBlock = {
-  tp1?: number;
-  tp2?: number;
-  tp3?: number;
-  runnerProbability?: number; // 0–1
-  massiveBreakout?: boolean;
-  notes?: string[];
-};
-
-export type MicroBlock = {
-  mps?: number; // 0–100
-  sps?: number; // 0–100
-  sfi?: number; // 0–100
-  spread?: number;
-  imbalance?: number;
-  notes?: string[];
-};
-
-export type EngineOutput = {
-  // These nested blocks are what your cards expect
-  entry?: EntryBlock;
-  momentum?: MomentumBlock;
-  structure?: StructureBlock;
-  liquidity?: LiquidityBlock;
-  targets?: TargetsBlock;
-
-  // Trim card expects this
-  trim: TrimSignal;
-
-  // High-level metrics
-  tis: number; // 0–100
-};
-
-export type EngineSnapshot = {
-  // Your DashboardPage expects these fields directly on EngineSnapshot
+export type AnalyzeResponse = {
+  contract_version: string;
+  engine_rev: string;
   ticker: string;
-  headline?: string;
+  as_of: string;
 
-  // Probabilities / EV / sizing that your page references
-  p_up?: number;     // 0–1
-  ev?: number;       // expected value (unitless)
-  tier?: Tier;
-  sizePct?: number;  // 0–100
-  price?: number;
-
-  bullets?: string[];
-
-  zones?: Zones;
-
-  micro?: MicroBlock;
-
-  // Also include the full output object for card stack
-  output: EngineOutput;
-
-  // Timestamp for refresh/UX
-  timestamp: string;
+  decision: Decision;
+  zones: Zones;
+  trim: Trim;
+  structure: Structure;
+  flow: Flow;
+  explain: Explain;
 };
+
+/**
+ * Back-compat aliases for earlier UI code.
+ * These stop the TS errors you saw (EngineSnapshot/EngineOutput missing fields).
+ */
+export type EngineSnapshot = AnalyzeResponse;
+export type EngineOutput = AnalyzeResponse;
