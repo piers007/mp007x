@@ -1,12 +1,6 @@
 {
-  "apps": [
-    {
-      "id": "knox-007",
-      "name": "Knox 007 Engine",
-      "description": "Institutional-grade intraday decision engine",
-      "entrypoint": "/api/007/snapshot",
-      "version": "v1.0",
-      "status": "active"
-    }
-  ]
+  "name": "knox-007-backend",
+  "env": {
+    "ENGINE_REV": "r000"
+  }
 }
