@@ -1,4 +1,4 @@
-import type { EngineOutput } from '../../engine/types'
+import { EngineOutput } from '../../engine/types';
 
 export function LiquidityCard(props: { liquidity: EngineOutput['liquidity'] }) {
   const l = props.liquidity
