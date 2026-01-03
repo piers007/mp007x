@@ -1,66 +1,61 @@
-// src/test/mockEngineOutput.ts
-import { EngineSnapshot } from '../engine/types';
+import type { AnalyzeResponse } from "../engine/types";
 
-export const mockSnapshot: EngineSnapshot = {
-  ticker: 'SAMPLE',
-  headline: 'Mock Snapshot (UI Smoke Test)',
+export const mockEngineOutput: AnalyzeResponse = {
+  contract_version: "1.0",
+  engine_rev: "r000",
+  ticker: "QCLS",
+  as_of: new Date().toISOString(),
 
-  p_up: 0.58,
-  ev: 0.14,
-  tier: 3,
-  sizePct: 25,
-  price: 12.34,
-
-  bullets: [
-    'RVOL elevated vs 30D ADV',
-    'Float rotation pressure building',
-    'Microstructure stable (no collapse)',
-  ],
+  decision: {
+    state: "HOLD",
+    bias: "BULLISH",
+    confidence: 0.61,
+    p_up: 0.57,
+    ev_r: 0.22,
+    tier: 2,
+    size_pct: 18,
+    pillar_agreement: 4,
+  },
 
   zones: {
-    price: 12.34,
-    buyZone: { low: 11.90, high: 12.10 },
-    support: 11.70,
-    resistance: 12.85,
-    takeProfits: [
-      { label: 'TP1', price: 12.85, kind: 'tp' },
-      { label: 'TP2', price: 13.40, kind: 'tp' },
-      { label: 'TP3', price: 14.10, kind: 'tp' },
+    entry: [
+      { price: 12.5, strength: "HIGH", why: "VWAP cluster + pivots (mock)" },
+      { price: 12.3, strength: "MED", why: "Gap shelf retest (mock)" },
     ],
-    stopLoss: { label: 'SL', price: 11.55, kind: 'sl' },
-    levels: [
-      { label: 'PDH', price: 13.05, kind: 'pdh' },
-      { label: 'PDL', price: 11.20, kind: 'pdl' },
+    take_profit: [
+      { price: 13.5, trim_pct_of_initial: 18, reason: "TP1 harvest", tis: 62 },
+      { price: 14.4, trim_pct_of_initial: 22, reason: "TP2 extension harvest", tis: 62 },
+      { price: 15.5, trim_pct_of_initial: 30, reason: "TP3 runner capture", tis: 62 },
+    ],
+    stop: { price: 11.5, stop_mult: 1.15, reason: "Structure invalidation (mock)" },
+    extension: { runner_mode: true, target: 16.7, reason: "If trend holds (mock)" },
+  },
+
+  trim: {
+    tis: 62,
+    next_trim_window_sec: 1080,
+    trim_box: { active: true, suggested_trim_pct_of_initial: 12, reason: "TIS>=60" },
+  },
+
+  structure: { structure_health: 0.66, exit_only_if: "STRUCTURE_FAIL", fail_reasons: [] },
+
+  flow: {
+    delta_state: "ACCELERATING",
+    orderbook_state: "BID_DOMINANT",
+    liquidity_map: { void_zones: [], absorption_shelves: [] },
+  },
+
+  explain: {
+    bullets: [
+      "Bias bullish while structure health > 0.55.",
+      "Trim box active (TIS>=60).",
+      "Exit only allowed on structure failure (contract rule).",
+    ],
+    vetoes: [],
+    top_drivers: [
+      { name: "Structure Health", score: 0.66, direction: 1 },
+      { name: "Trim TIS", score: 0.62, direction: 1 },
+      { name: "Orderbook State", score: 0.58, direction: 1 },
     ],
   },
-
-  micro: {
-    mps: 62,
-    sps: 55,
-    sfi: 48,
-    notes: ['Bid resilience present', 'No heavy spread expansion'],
-  },
-
-  output: {
-    tis: 66,
-    trim: {
-      nextTrimWindow: 'NEXT_15M',
-      trimNowPctOrig: 0,
-      reasons: ['TIS>60 watch trim box', 'No exhaustion trigger yet'],
-    },
-    entry: { price: 12.05, stop: 11.55, notes: ['Enter near buy zone'] },
-    momentum: { score: 61, notes: ['EMA/VWAP aligned'] },
-    structure: { score: 58, notes: ['Holding above prior pivot'] },
-    liquidity: { score: 54, notes: ['No liquidity vacuum yet'] },
-    targets: {
-      tp1: 12.85,
-      tp2: 13.40,
-      tp3: 14.10,
-      runnerProbability: 0.22,
-      massiveBreakout: false,
-      notes: ['Scale out into momentum only'],
-    },
-  },
-
-  timestamp: new Date().toISOString(),
 };
