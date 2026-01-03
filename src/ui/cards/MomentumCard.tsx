@@ -1,21 +1,24 @@
-import { EngineOutput } from '../../engine/types';
+import React from "react";
+import type { AnalyzeResponse } from "../../engine/types";
 
-export function MomentumCard(props: { momentum: EngineOutput['momentum'] }) {
-  const m = props.momentum
-  const slopeBadge = m.deltaSlope === 'UP' ? 'green' : m.deltaSlope === 'DOWN' ? 'red' : 'yellow'
+export default function LiquidityCard({ snap }: { snap: AnalyzeResponse }) {
+  const lm = snap.flow.liquidity_map;
+  const voids = lm?.void_zones?.length || 0;
+  const shelves = lm?.absorption_shelves?.length || 0;
 
   return (
     <div className="knox-card">
       <div className="card-header">
-        <span className="card-title">Momentum</span>
-        <span className={`badge ${slopeBadge}`}>Δ Slope {m.deltaSlope}</span>
+        <div className="card-title">Liquidity</div>
+        <span className="badge purple">{snap.flow.orderbook_state}</span>
       </div>
 
-      <div style={{ fontSize: 16, fontWeight: 700 }}>{m.summary}</div>
-      <div style={{ marginTop: 6, color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.35 }}>
-        1K Δ: {m.delta1k.toLocaleString()} • 5K Δ: {m.delta5k.toLocaleString()} • Conversion: {(m.conversionEfficiency * 100).toFixed(0)}%
-        {m.hiddenMomentum ? ' • Hidden momentum' : ''}
+      <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+        Void zones: <strong>{voids}</strong>
+      </div>
+      <div style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 6 }}>
+        Absorption shelves: <strong>{shelves}</strong>
       </div>
     </div>
-  )
+  );
 }
