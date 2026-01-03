@@ -1,47 +1,41 @@
-import { EngineOutput } from '../../engine/types';
+import React from "react";
+import type { AnalyzeResponse } from "../../engine/types";
 
-type Props = {
-  data: EngineOutput;
-};
-
-export default function TrimCard({ data }: Props) {
-  const t = data.trim;
+export default function TrimCard({ snap }: { snap: AnalyzeResponse }) {
+  const t = snap.trim;
+  const fill = Math.max(0, Math.min(100, t.tis));
 
   const windowLabel =
-    typeof t.nextTrimWindow === 'string'
-      ? t.nextTrimWindow.replace(/_/g, ' ')
-      : '';
-
-  const fill = Math.min(100, Math.max(0, data.tis));
+    t.next_trim_window_sec >= 60
+      ? `${Math.round(t.next_trim_window_sec / 60)}m`
+      : `${t.next_trim_window_sec}s`;
 
   return (
     <div className="knox-card">
       <div className="card-header">
-        <div className="card-title">Trim Signal</div>
-        <span className="badge purple">TIS {data.tis}%</span>
+        <div className="card-title">Trim (TIS)</div>
+        <span className="badge purple">TIS {t.tis}</span>
       </div>
 
       <div className="gauge">
         <div className="fill" style={{ width: `${fill}%` }} />
       </div>
 
-      <div style={{ marginTop: 10, fontSize: 16, fontWeight: 700 }}>
-        Next Trim Window
+      <div style={{ marginTop: 10, color: "var(--text-secondary)", fontSize: 13 }}>
+        Next Trim Window: <strong>{windowLabel}</strong>
       </div>
 
-      <div style={{ marginTop: 6, color: 'var(--text-secondary)' }}>
-        {windowLabel}
-      </div>
-
-      {t.nextTrimWindow === 'NOW' && typeof t.trimNowPctOrig === 'number' && (
+      {t.trim_box?.active && (
         <div className="trim-overlay">
-          Trim <strong>{t.trimNowPctOrig}%</strong> of original position
+          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Trim Suggested</div>
+          <div style={{ marginTop: 6, fontSize: 16, fontWeight: 700 }}>
+            {t.trim_box.suggested_trim_pct_of_initial.toFixed(0)}% of initial
+          </div>
+          <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 12 }}>
+            {t.trim_box.reason}
+          </div>
         </div>
       )}
-
-      <div style={{ marginTop: 6, color: 'var(--text-muted)' }}>
-        • {t.reasons.slice(0, 3).join(' • ')}
-      </div>
     </div>
   );
 }
