@@ -1,45 +1,36 @@
 // src/engine/types.ts
 
-export type ConfidenceTier = 0 | 1 | 2 | 3 | 4;
+export type TrimWindow =
+  | 'NOW'
+  | 'NEXT_5M'
+  | 'NEXT_15M'
+  | 'NEXT_30M'
+  | 'LATER';
 
-export type NextTrimWindow = "NOW" | "SOON" | "WAIT";
+export interface TrimSignal {
+  nextTrimWindow: TrimWindow;
+  trimNowPctOrig?: number;
+  reasons: string[];
+}
 
-export type TrimIntensity = {
-  tis: number;                 // 0..100
-  nextTrimWindow: NextTrimWindow;
-  trimNowPctOrig?: number;     // % of ORIGINAL position (dynamic)
-  harvestMode?: boolean;       // true if extension harvest mode
-  reasons: string[];           // short bullet reasons
-};
-
-export type Zones = {
-  buyZone: { lo: number; hi: number; rationale: string[] };
-  invalidation: { price: number; rationale: string[] };
-  tpLadder: Array<{ level: number; pctTrim: number; label: string; rationale: string[] }>;
-};
-
-export type Microstructure = {
-  obeScore?: number;           // 0..100
-  bidAskImbalance?: number;    // -1..+1
-  thinAsk?: boolean;
-  thinBid?: boolean;
-  notes?: string[];
-};
-
-export type EngineSnapshot = {
+export interface EngineOutput {
   ticker: string;
-  ts: string;                  // ISO timestamp
-  price?: number;
 
-  p_up: number;                // 0..1
-  ev: number;                  // expected value (normalized)
-  tier: ConfidenceTier;
-  sizePct: number;             // 0..125
+  tis: number;
+  confidence: number;
 
-  zones: Zones;
-  trim: TrimIntensity;
-  micro: Microstructure;
+  momentumScore: number;
+  structureScore: number;
+  liquidityScore: number;
 
-  headline: string;            // 1-line decision summary
-  bullets: string[];           // explanation bullets
-};
+  entryPrice?: number;
+  stopLoss?: number;
+  targets?: number[];
+
+  trim: TrimSignal;
+}
+
+export interface EngineSnapshot {
+  timestamp: string;
+  output: EngineOutput;
+}
