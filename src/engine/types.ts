@@ -1,89 +1,132 @@
-export type AnalyzeMode = "INTRADAY" | "SWING";
+/**
+ * Knox 007 — Contract Types (canonical)
+ * Goal: keep frontend stable while backend evolves.
+ * This file is the single source of truth for snapshot shape.
+ */
 
-export type AnalyzeRequest = {
-  ticker: string;
-  as_of?: string;
-  mode?: AnalyzeMode;
+/* ---------- Shared small types ---------- */
+
+export type Bias = "BULLISH" | "BEARISH" | "NEUTRAL" | "HOLD" | string;
+
+export type ZoneStrength = "HIGH" | "MED" | "LOW" | string;
+
+export type ZoneEntry = {
+  price: number;
+  label?: string;
+  strength?: ZoneStrength;
 };
 
-export type DecisionState = "BUY" | "HOLD" | "NO_TRADE" | "TRIM" | "EXIT";
-export type Bias = "BULLISH" | "BEARISH" | "NEUTRAL";
-
-export type Decision = {
-  state: DecisionState;
-  bias: Bias;
-  confidence: number;
-  p_up: number;
-  ev_r: number;
-  tier: number;
-  size_pct: number;
-  pillar_agreement: number;
+export type StopZone = {
+  price: number;
+  label?: string;
 };
 
-export type EntryZone = { price: number; strength: "HIGH" | "MED" | "LOW"; why: string };
-export type TakeProfit = { price: number; trim_pct_of_initial: number; reason: string; tis: number };
-export type StopZone = { price: number; stop_mult: number; reason: string };
-export type Extension = { runner_mode: boolean; target: number; reason: string };
-
-export type Zones = {
-  entry: EntryZone[];
-  take_profit: TakeProfit[];
-  stop: StopZone;
-  extension: Extension;
+export type TargetZone = {
+  price: number;
+  label?: string;
 };
 
-export type TrimBox = {
-  active: boolean;
-  suggested_trim_pct_of_initial: number;
-  reason: string;
+export type ZonesBlock = {
+  entry?: ZoneEntry[];
+  stop?: StopZone;
+  targets?: TargetZone[];
 };
 
-export type Trim = {
-  tis: number; // 0-100
-  next_trim_window_sec: number;
-  trim_box: TrimBox;
+export type DecisionBlock = {
+  bias?: Bias;
+  tier?: number;
+
+  /** Prob up: 0..1 (preferred) */
+  p_up?: number;
+
+  /** Expected value ratio */
+  ev?: number;
+
+  /** Suggested position size percent */
+  sizePct?: number;
+
+  /** Confidence percent 0..100 */
+  confidence?: number;
+
+  /** Bullet reasoning lines */
+  bullets?: string[];
 };
 
-export type Structure = {
-  structure_health: number;
-  exit_only_if: "STRUCTURE_FAIL";
-  fail_reasons: string[];
+export type TrimSignal = {
+  /** Trim Intensity Score 0..100 */
+  tis?: number;
+
+  /** Next window in minutes */
+  nextWindowMin?: number;
+
+  /** Suggested trim percent of initial */
+  suggestedPct?: number;
+
+  /** Optional: human-readable window label */
+  nextTrimWindow?: string;
 };
 
-export type LiquidityMap = { void_zones: any[]; absorption_shelves: any[] };
+export type StructureBlock = {
+  /** 0..1 health score (preferred) */
+  health?: number;
 
-export type Flow = {
-  delta_state: "ACCELERATING" | "NEUTRAL" | "EXHAUSTING" | "UNKNOWN";
-  orderbook_state: "BID_DOMINANT" | "ASK_DOMINANT" | "THINNING_BID" | "THINNING_ASK" | "UNKNOWN";
-  liquidity_map: LiquidityMap;
+  /** Human / enum status e.g. STRUCTURE_OK | STRUCTURE_FAIL */
+  status?: string;
+
+  /** Optional notes */
+  notes?: string[];
 };
 
-export type Veto = { engine: string; type: "soft" | "hard"; reason_code: string; note: string };
-export type Driver = { name: string; score: number; direction: -1 | 1 };
-
-export type Explain = {
-  bullets: string[];
-  vetoes: Veto[];
-  top_drivers: Driver[];
+export type LiquidityBlock = {
+  state?: string;
+  voidZones?: number;
+  absorptionShelves?: number;
 };
 
-export type AnalyzeResponse = {
-  contract_version: string;
-  engine_rev: string;
-  ticker: string;
-  as_of: string;
+export type MomentumBlock = {
+  state?: string;
+  orderbook?: string;
+};
 
-  decision: Decision;
-  zones: Zones;
-  trim: Trim;
-  structure: Structure;
-  flow: Flow;
-  explain: Explain;
+/* ---------- Canonical snapshot ---------- */
+
+/**
+ * EngineSnapshot = the payload our UI renders.
+ * Backend should return this (or superset).
+ */
+export type EngineSnapshot = {
+  ticker?: string;
+  headline?: string;
+
+  decision?: DecisionBlock;
+  zones?: ZonesBlock;
+  trim?: TrimSignal;
+
+  structure?: StructureBlock;
+  liquidity?: LiquidityBlock;
+  momentum?: MomentumBlock;
+
+  /** Allow backend to add fields without breaking builds */
+  [k: string]: unknown;
 };
 
 /**
- * Back-compat aliases for earlier UI code.
- * These stop the TS errors you saw (EngineSnapshot/EngineOutput missing fields).
+ * EngineOutput = legacy alias used by UI stack.
+ * We keep it as the same shape as EngineSnapshot to prevent
+ * cascading TS breakage in cards and pages.
  */
-export type EngineSnapshot = AnalyzeResponse;
-export type EngineOutput = AnalyzeResponse;
+export type EngineOutput = EngineSnapshot;
+
+/* ---------- Optional: helpers for strict consumers ---------- */
+
+export function normalizeSnapshot(input: any): EngineSnapshot {
+  // Shallow normalize so UI never explodes on missing blocks.
+  const snap: EngineSnapshot = (input ?? {}) as EngineSnapshot;
+
+  if (typeof snap.decision?.p_up === "number" && snap.decision.p_up > 1) {
+    // If backend sends percent (0..100), convert to 0..1
+    snap.decision.p_up = snap.decision.p_up / 100;
+  }
+
+  return snap;
+}
