@@ -1,8 +1,8 @@
-import type { EngineOutput } from '../engine/types'
+import { EngineOutput } from '../engine/types';
+import TrimCard from './cards/TrimCard';
 import { StructureCard } from './cards/StructureCard'
 import { EntryCard } from './cards/EntryCard'
 import { MomentumCard } from './cards/MomentumCard'
-import { TrimCard } from './cards/TrimCard'
 import { TargetsCard } from './cards/TargetsCard'
 import { LiquidityCard } from './cards/LiquidityCard'
 
