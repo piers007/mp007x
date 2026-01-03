@@ -1,4 +1,4 @@
-import type { EngineOutput } from '../../engine/types'
+import { EngineOutput } from '../../engine/types';
 
 export function EntryCard(props: { entry: EngineOutput['entry'] }) {
   const { primaryBuy, secondaryBuy, invalidBelow } = props.entry
