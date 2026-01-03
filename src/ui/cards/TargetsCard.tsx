@@ -1,22 +1,35 @@
-import { EngineOutput } from '../../engine/types';
+import React from "react";
+import type { AnalyzeResponse } from "../../engine/types";
 
-export function TargetsCard(props: { targets: EngineOutput['targets'] }) {
-  const t = props.targets
-  const rp = Math.round(t.runnerProbability * 100)
-
+export default function TargetsCard({ snap }: { snap: AnalyzeResponse }) {
+  const tps = snap.zones.take_profit || [];
+  const stop = snap.zones.stop;
   return (
     <div className="knox-card">
       <div className="card-header">
-        <span className="card-title">Targets & Runway</span>
-        <span className={`badge ${t.massiveBreakout ? 'purple' : 'yellow'}`}>Runner {rp}%</span>
+        <div className="card-title">Targets + Stop</div>
+        <span className="badge green">TP Ladder</span>
       </div>
 
-      <div style={{ fontSize: 16, fontWeight: 700 }}>
-        TP1 ${t.tp1.toFixed(2)} • TP2 ${t.tp2.toFixed(2)} {t.tp3 ? `• TP3 $${t.tp3.toFixed(2)}` : ''}
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ fontWeight: 700 }}>SL</div>
+          <span className="badge red">${stop.price.toFixed(2)}</span>
+        </div>
+        <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 4 }}>{stop.reason}</div>
       </div>
-      <div style={{ marginTop: 6, color: 'var(--text-secondary)', fontSize: 13 }}>
-        {t.massiveBreakout ? 'Massive breakout regime detected.' : 'Normal continuation regime.'}
-      </div>
+
+      {tps.slice(0, 3).map((tp, i) => (
+        <div key={i} style={{ marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+            <div style={{ fontWeight: 700 }}>TP{i + 1}</div>
+            <span className="badge green">${tp.price.toFixed(2)}</span>
+          </div>
+          <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 4 }}>
+            Trim {tp.trim_pct_of_initial.toFixed(0)}% • {tp.reason}
+          </div>
+        </div>
+      ))}
     </div>
-  )
+  );
 }
