@@ -5,8 +5,8 @@ import type { EngineSnapshot, EngineOutput } from "../engine/types";
 // If your repo uses different card components, keep those imports,
 // but the important part is: DO NOT fetch('/api/analyze') anywhere.
 export default function DashboardPage() {
-  const [ticker, setTicker] = useState<string>("QCLS");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [ticker, setTicker] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [snap, setSnap] = useState<EngineSnapshot | null>(null);
