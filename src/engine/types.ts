@@ -29,14 +29,18 @@ export type Trend =
 
 export type RunnerCompat = {
   probability: number;
-  /** legacy field some mocks use */
+
+  /** legacy fields some mocks use */
   runnerProbability?: number;
+  runnerMode?: boolean | string;
 };
 
 export type DeltaCompat = {
   state: string;
-  /** legacy field some mocks use */
+
+  /** legacy fields some mocks use (different casing in older mocks) */
   KScore?: number;
+  Kscore?: number;
 };
 
 // ------------------------------
@@ -144,9 +148,10 @@ export type EngineOutput = {
   targets: TargetOutput;
 
   // --------------------
-  // LEGACY OUTPUT FIELD (mock uses out.runner)
+  // LEGACY OUTPUT FIELDS (mock uses these)
   // --------------------
   runner?: RunnerCompat;
+  delta?: DeltaCompat;
 };
 
 // ------------------------------
