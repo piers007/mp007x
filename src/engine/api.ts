@@ -162,17 +162,30 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
  * Fetches the latest engine snapshot+output for a ticker.
  * Uses POST /v1/analyze (matches your current backend main.py).
  */
-export async function fetchEngine(ticker: string, baseUrl: string = DEFAULT_BASE_URL): Promise<EngineFetchResult> {
+export async function fetchEngine(
+  ticker: string,
+  baseUrl: string = DEFAULT_BASE_URL
+): Promise<EngineFetchResult> {
   const t = ticker.trim().toUpperCase();
+
+  // ✅ correct backend endpoint
   const url = `${baseUrl.replace(/\/$/, "")}/v1/analyze`;
 
-  const payload = await httpJson<any>(url, {
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ticker: t }),
   });
 
-  return adaptBackendToUI(payload);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${res.statusText} :: ${text}`);
+  }
+
+  const payload = await res.json();
+
+  // TEMP: until backend returns { snap, out } directly
+  return payload as EngineFetchResult;
 }
 
 /**
