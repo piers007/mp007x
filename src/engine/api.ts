@@ -187,8 +187,8 @@ export async function fetchEngine(
 
   const payload = await res.json();
 
-  // TEMP: until backend returns { snap, out } directly
-  return payload as EngineFetchResult;
+ // ✅ Adapt backend contract -> UI contract
+return adaptBackendToUI(payload);
 }
 
 /**
