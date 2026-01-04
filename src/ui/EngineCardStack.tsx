@@ -1,45 +1,59 @@
+// src/ui/EngineCardStack.tsx
 import React from "react";
 import type { AnalyzeResponse } from "../engine/types";
-import EntryCard from "./cards/EntryCard";
-import LiquidityCard from "./cards/LiquidityCard";
-import MomentumCard from "./cards/MomentumCard";
+
 import StructureCard from "./cards/StructureCard";
+import EntryCard from "./cards/EntryCard";
+import MomentumCard from "./cards/MomentumCard";
+import LiquidityCard from "./cards/LiquidityCard";
 import TargetsCard from "./cards/TargetsCard";
 import TrimCard from "./cards/TrimCard";
 
-type Props = { snap: AnalyzeResponse };
+type Props = {
+  data: AnalyzeResponse;
+};
 
-export function EngineCardStack({ snap }: Props) {
+export default function EngineCardStack({ data }: Props) {
+  const { snap, out } = data;
+
   return (
     <div className="grid-cards">
-      <div className="knox-card span-2">
+      <div className="knox-card">
         <div className="card-header">
-          <div className="card-title">Decision</div>
-          <span className="badge purple">
-            {snap.decision.bias} • Tier {snap.decision.tier}
-          </span>
+          <div className="card-title">Overview</div>
+          <div className={`badge ${snap.verdict === "BUY" ? "green" : snap.verdict === "HOLD" ? "yellow" : "red"}`}>
+            {snap.verdict}
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <span className="badge green">p_up {Math.round(snap.decision.p_up * 100)}%</span>
-          <span className="badge purple">EV/R {snap.decision.ev_r.toFixed(2)}</span>
-          <span className="badge yellow">Size {snap.decision.size_pct.toFixed(0)}%</span>
-          <span className="badge purple">Conf {Math.round(snap.decision.confidence * 100)}%</span>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 0.2 }}>{snap.ticker}</div>
+            <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 2 }}>{snap.headline}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 18, fontWeight: 750 }}>${snap.price.toFixed(2)}</div>
+            <div style={{ color: "var(--text-muted)", fontSize: 12 }}>
+              P(up) {(snap.p_up * 100).toFixed(0)}% • Tier {snap.tier} • Size {snap.sizePct}%
+            </div>
+          </div>
         </div>
 
-        <div style={{ marginTop: 10, color: "var(--text-secondary)", fontSize: 13 }}>
-          {snap.explain.bullets.slice(0, 3).map((b: string, i: number) => (
-            <div key={i}>• {b}</div>
+        <div style={{ marginTop: 10 }}>
+          {snap.bullets.map((b: string, i: number) => (
+            <div key={i} style={{ color: "var(--text-secondary)", fontSize: 12, marginTop: 6 }}>
+              • {b}
+            </div>
           ))}
         </div>
       </div>
 
-      <EntryCard snap={snap} />
-      <TargetsCard snap={snap} />
-      <TrimCard snap={snap} />
-      <StructureCard snap={snap} />
-      <LiquidityCard snap={snap} />
-      <MomentumCard snap={snap} />
+      <StructureCard data={data} />
+      <EntryCard data={data} />
+      <MomentumCard data={data} />
+      <LiquidityCard data={data} />
+      <TargetsCard data={data} />
+      <TrimCard data={data} />
     </div>
   );
 }
