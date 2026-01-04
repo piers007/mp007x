@@ -1,57 +1,136 @@
-import { EngineSnapshot } from "../engine/types";
+// src/test/mockEngineOutput.ts
+import type { EngineFetchResult } from "../engine/api";
+import type { EngineSnapshot, EngineOutput } from "../engine/types";
 
-export const mockEngineOutput: EngineSnapshot = {
-  ticker: "QCLS",
-  headline: "QCLS — HOLD (BULLISH)",
+export function makeMockEngine(ticker: string = "SEV"): EngineFetchResult {
+  const t = ticker.trim().toUpperCase();
 
-  decision: {
-    bias: "BULLISH",
+  const snap: EngineSnapshot = {
+    ticker: t,
+    headline: "Liquidity supportive; structure intact. Favor controlled trims.",
+
+    price: 9.24,
+    p_up: 0.72,
+    ev: 0.18,
     tier: 2,
-    p_up: 0.57,
-    ev: 0.22,
-    sizePct: 18,
-    confidence: 61,
+    sizePct: 50,
+    verdict: "BUY",
+
     bullets: [
-      "Bias bullish while structure health > 0.55.",
-      "Trim box active (TIS>=60).",
-      "Exit only allowed on structure failure (contract rule).",
+      "BUY zone active; stop defined; TPs clean & horizontal.",
+      "Order-book conviction steady; no major sell wall above TP1.",
+      "Runner probability elevated—trim lighter if extension persists."
     ],
-  },
 
-  zones: {
-    entry: [
-      { price: 12.5, label: "VWAP cluster + pivots (mock)", strength: "HIGH" },
-      { price: 12.3, label: "Gap shelf retest (mock)", strength: "MED" },
-    ],
-    stop: { price: 11.5, label: "Structure invalidation (mock)" },
-    targets: [
-      { price: 13.5, label: "TP1 harvest" },
-      { price: 14.4, label: "TP2 extension harvest" },
-      { price: 15.5, label: "TP3 runner capture" },
-    ],
-  },
+    zones: {
+      buyZone: { low: 9.10, high: 9.25, label: "BUY ZONE" },
+      stopZone: { low: 8.92, high: 8.98, label: "STOP ZONE" },
+      support: [{ price: 9.00, label: "SUP1" }],
+      resistance: [{ price: 9.55, label: "R1" }],
+      tpLevels: [
+        { price: 10.40, label: "TP1" },
+        { price: 10.80, label: "TP2" },
+        { price: 11.00, label: "TP3" }
+      ]
+    },
 
-  trim: {
-    tis: 62,
-    nextWindowMin: 18,
-    suggestedPct: 12,
-    nextTrimWindow: "18m",
-  },
+    trim: {
+      tis: 47,
+      suggestedTrimPct: 0,
+      mode: "NORMAL",
+      english: "No trim yet—edge still building; wait for TIS≥60 near TP.",
+      nextWindow: "Near TP1"
+    },
 
-  structure: {
-    health: 0.66,
-    status: "STRUCTURE_OK",
-    notes: ["Exit only if: STRUCTURE_FAIL", "No failure reasons flagged."],
-  },
+    micro: {
+      obConviction: 71,
+      obi: 0.24,
+      spoofRisk: "low",
+      vacuum: "med",
+      notes: [
+        { title: "Bid shelves", value: "stacked 9.10–9.15", status: "green" },
+        { title: "Ask", value: "thin above 9.40", status: "green" },
+        { title: "Spoof", value: "no pull detected", status: "neutral" }
+      ],
+      english: "Buy-side liquidity supports continuation; ask thins into TP1."
+    },
 
-  liquidity: {
-    state: "BID_DOMINANT",
-    voidZones: 0,
-    absorptionShelves: 0,
-  },
+    runner: {
+      runnerProbability: 82,
+      runnerMode: true,
+      addOnPermission: "PULLBACK_ADD",
+      trimBias: 0.5,
+      gates: {
+        rpGte70: true,
+        structureValid: true,
+        obConvictionGte65: true,
+        kGte60: true,
+        hardVetoFree: true
+      },
+      english: "Runner mode ON: vacuum + delta pressure accelerating; favor lighter trims."
+    },
 
-  momentum: {
-    state: "ACCELERATING",
-    orderbook: "BID_DOMINANT",
-  },
-};
+    delta: {
+      kScore: 74,
+      vDelta1k: 0.62,
+      vDelta5k: 0.48,
+      aDelta: 0.31,
+      vPrice: 0.44,
+      aPrice: 0.12,
+      alignment: 0.86,
+      persistence: 0.74,
+      accelScore: 0.62,
+      eventScore: 0.15,
+      direction: "up",
+      regime: "supportive",
+      lastEvent: {
+        type: "print_disappear",
+        classification: "bullish_ignition",
+        ts: new Date().toISOString(),
+        magnitude: 0.58,
+        notes: "5k print vanished; price held; bid refilled"
+      },
+      english: "Delta accelerating with price; 1k+5k aligned—continuation pressure present."
+    }
+  };
+
+  const out: EngineOutput = {
+    structure: {
+      structureValid: true,
+      trend: "up",
+      keyLevel: 9.10,
+      english: "Structure intact with higher lows; reclaim holding above key demand."
+    },
+    entry: {
+      entryBias: "long",
+      idealEntry: { low: 9.10, high: 9.25, label: "BUY ZONE" },
+      invalidation: 8.95,
+      english: "Prefer entries on pullback into buy zone; invalidate below stop shelf."
+    },
+    momentum: {
+      state: "continuation",
+      sigmaRegime: "normal",
+      english: "Momentum supportive; avoid chasing—use pullback adds if runner holds."
+    },
+    liquidity: {
+      shelves: [
+        { side: "bid", price: 9.15, strength: 0.82 },
+        { side: "bid", price: 9.10, strength: 0.76 }
+      ],
+      walls: [{ side: "ask", price: 9.55, strength: 0.55 }],
+      english: "Bid shelves persistent under price; light resistance into first target."
+    },
+    targets: {
+      runnerProbability: 82,
+      massiveBreakout: false,
+      tp1: 10.4,
+      tp2: 10.8,
+      tp3: 11.0,
+      english: "Targets laddered at liquidity nodes; trim only when TIS triggers."
+    },
+    runner: snap.runner,
+    delta: snap.delta
+  };
+
+  return { snap, out };
+}
