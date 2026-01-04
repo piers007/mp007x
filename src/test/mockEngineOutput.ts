@@ -2,8 +2,7 @@ import type { EngineSnapshot, EngineOutput } from "../engine/types";
 
 /**
  * Mock engine output used for UI + test rendering.
- * CONTRACT-ALIGNED with current types.ts
- * Last verified: 2026-01-03
+ * Must match current src/engine/types.ts exactly.
  */
 
 export const mockEngineSnapshot: EngineSnapshot = {
@@ -11,8 +10,6 @@ export const mockEngineSnapshot: EngineSnapshot = {
   price: 9.24,
 
   verdict: "HOLD", // BUY | HOLD | WAIT
-  bias: "BULLISH", // Bias enum (NOT LONG/SHORT)
-
   tier: 2,
   sizePct: 18,
   p_up: 0.57,
@@ -25,13 +22,11 @@ export const mockEngineSnapshot: EngineSnapshot = {
     "Trim box active but no forced exit"
   ],
 
-  // RunnerCompat — STRICT
   runner: {
     probability: 42,
     addOnPermission: true
   },
 
-  // DeltaCompat — STRICT
   delta: {
     state: "ACCELERATING",
     KScore: 72
@@ -47,7 +42,8 @@ export const mockEngineSnapshot: EngineSnapshot = {
 
 export const mockEngineOutput: EngineOutput = {
   entry: {
-    entryBias: "LONG", // entryBias ≠ Bias (this IS allowed)
+    // IMPORTANT: entryBias is type Bias in your codebase (NOT LONG/SHORT)
+    entryBias: "BULLISH",
     idealEntry: {
       low: 9.05,
       high: 9.30,
@@ -76,9 +72,7 @@ export const mockEngineOutput: EngineOutput = {
       { side: "bid", price: 9.10, strength: 0.74 },
       { side: "bid", price: 8.95, strength: 0.61 }
     ],
-    walls: [
-      { side: "ask", price: 9.60, strength: 0.58 }
-    ]
+    walls: [{ side: "ask", price: 9.60, strength: 0.58 }]
   },
 
   targets: {
@@ -92,7 +86,7 @@ export const mockEngineOutput: EngineOutput = {
 };
 
 /**
- * Legacy adapter for UI components expecting AnalyzeResponse
+ * Legacy adapter for UI components expecting AnalyzeResponse-like shape
  */
 export const mockAnalyzeResponse = {
   snap: mockEngineSnapshot,
