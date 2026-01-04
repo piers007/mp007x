@@ -1,3 +1,4 @@
+// src/engine/api.ts
 import type { EngineSnapshot, EngineOutput } from "./types";
 
 const DEFAULT_BASE_URL =
@@ -5,9 +6,9 @@ const DEFAULT_BASE_URL =
   (import.meta as any).env?.VITE_API_BASE ??
   "https://knox-007-backend.onrender.com";
 
-
 // 🔎 TEMP DEBUG — REMOVE AFTER CONFIRMATION
 console.info("[Knox] API_BASE =", DEFAULT_BASE_URL);
+
 export type EngineFetchResult = {
   snap: EngineSnapshot;
   out: EngineOutput;
@@ -187,8 +188,8 @@ export async function fetchEngine(
 
   const payload = await res.json();
 
- // ✅ Adapt backend contract -> UI contract
-return adaptBackendToUI(payload);
+  // ✅ IMPORTANT: adapt backend payload -> UI contract
+  return adaptBackendToUI(payload);
 }
 
 /**
