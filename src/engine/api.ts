@@ -27,8 +27,23 @@ async function httpGetJson<T>(url: string): Promise<T> {
  */
 export async function fetchEngine(ticker: string, baseUrl: string = DEFAULT_BASE_URL): Promise<EngineFetchResult> {
   const t = ticker.trim().toUpperCase();
-  const url = `${baseUrl.replace(/\/$/, "")}/api/engine?ticker=${encodeURIComponent(t)}`;
-  return await httpGetJson<EngineFetchResult>(url);
+  const url = `${baseUrl.replace(/\/$/, "")}/api/analyze`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ticker: t }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${res.statusText} :: ${text}`);
+  }
+
+  const payload = await res.json();
+
+  // TEMP adapter: until backend returns {snap,out} directly
+  return payload;
 }
 
 /**
