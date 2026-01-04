@@ -2,16 +2,16 @@ import type { EngineSnapshot, EngineOutput } from "../engine/types";
 
 /**
  * Mock engine output used for UI + test rendering.
- * MUST stay contract-aligned with types.ts
- * Last synced: 2026-01-03 (Knox 007)
+ * CONTRACT-ALIGNED with current types.ts
+ * Last verified: 2026-01-03
  */
 
 export const mockEngineSnapshot: EngineSnapshot = {
   ticker: "SEV",
   price: 9.24,
 
-  verdict: "HOLD", // allowed: BUY | HOLD | WAIT
-  bias: "BULLISH", // allowed: BULLISH | BEARISH | NEUTRAL
+  verdict: "HOLD", // BUY | HOLD | WAIT
+  bias: "BULLISH", // Bias enum (NOT LONG/SHORT)
 
   tier: 2,
   sizePct: 18,
@@ -25,13 +25,13 @@ export const mockEngineSnapshot: EngineSnapshot = {
     "Trim box active but no forced exit"
   ],
 
-  // Runner + delta summary (snapshot-level)
+  // RunnerCompat — STRICT
   runner: {
     probability: 42,
-    mode: "NORMAL" as "NORMAL" | "EXTENSION", // UI-safe
     addOnPermission: true
   },
 
+  // DeltaCompat — STRICT
   delta: {
     state: "ACCELERATING",
     KScore: 72
@@ -47,7 +47,7 @@ export const mockEngineSnapshot: EngineSnapshot = {
 
 export const mockEngineOutput: EngineOutput = {
   entry: {
-    entryBias: "LONG",
+    entryBias: "LONG", // entryBias ≠ Bias (this IS allowed)
     idealEntry: {
       low: 9.05,
       high: 9.30,
@@ -92,7 +92,7 @@ export const mockEngineOutput: EngineOutput = {
 };
 
 /**
- * Combined export for legacy UI components
+ * Legacy adapter for UI components expecting AnalyzeResponse
  */
 export const mockAnalyzeResponse = {
   snap: mockEngineSnapshot,
