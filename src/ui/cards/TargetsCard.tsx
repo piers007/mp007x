@@ -1,35 +1,43 @@
+// src/ui/cards/TargetsCard.tsx
 import React from "react";
 import type { AnalyzeResponse } from "../../engine/types";
 
-export default function TargetsCard({ snap }: { snap: AnalyzeResponse }) {
-  const tps = snap.zones.take_profit || [];
-  const stop = snap.zones.stop;
+type Props = { data: AnalyzeResponse };
+
+export default function TargetsCard({ data }: Props) {
+  const { out, snap } = data;
+  const t = out.targets;
+
+  const tpRows: Array<{ label: string; price: number | null | undefined }> = [
+    { label: "TP1", price: t.tp1 },
+    { label: "TP2", price: t.tp2 },
+    { label: "TP3", price: t.tp3 }
+  ];
+
   return (
     <div className="knox-card">
       <div className="card-header">
-        <div className="card-title">Targets + Stop</div>
-        <span className="badge green">TP Ladder</span>
+        <div className="card-title">Targets</div>
+        <div className={`badge ${t.massiveBreakout ? "green" : "purple"}`}>
+          Runner {t.runnerProbability.toFixed(0)}%
+        </div>
       </div>
 
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <div style={{ fontWeight: 700 }}>SL</div>
-          <span className="badge red">${stop.price.toFixed(2)}</span>
-        </div>
-        <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 4 }}>{stop.reason}</div>
+      <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>{t.english}</div>
+
+      <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+        {tpRows.map((row, i: number) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+            <span style={{ color: "var(--text-muted)" }}>{row.label}</span>
+            <span>{row.price != null ? `$${row.price.toFixed(2)}` : "—"}</span>
+          </div>
+        ))}
       </div>
 
-      {tps.slice(0, 3).map((tp, i) => (
-        <div key={i} style={{ marginBottom: 10 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-            <div style={{ fontWeight: 700 }}>TP{i + 1}</div>
-            <span className="badge green">${tp.price.toFixed(2)}</span>
-          </div>
-          <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 4 }}>
-            Trim {tp.trim_pct_of_initial.toFixed(0)}% • {tp.reason}
-          </div>
-        </div>
-      ))}
+      <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+        <span style={{ color: "var(--text-muted)" }}>Current</span>
+        <span>${snap.price.toFixed(2)}</span>
+      </div>
     </div>
   );
 }
