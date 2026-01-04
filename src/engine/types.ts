@@ -189,3 +189,13 @@ export interface EngineOutput {
   runner?: RunnerBlock;
   delta?: DeltaPressure;
 }
+
+// ------------------------------
+// Backward-compat alias (legacy UI)
+// ------------------------------
+// Some UI modules still import AnalyzeResponse.
+// Keep this alias so we don't break older components while we modularize.
+export type AnalyzeResponse = {
+  snap: EngineSnapshot;
+  out: EngineOutput;
+};
