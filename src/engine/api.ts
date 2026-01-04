@@ -1,9 +1,8 @@
-// src/engine/api.ts
 import type { EngineSnapshot, EngineOutput } from "./types";
 
 const DEFAULT_BASE_URL =
-  (import.meta as any).env?.VITE_KNOX_API_BASE ??
   (import.meta as any).env?.VITE_API_BASE ??
+  (import.meta as any).env?.VITE_KNOX_API_BASE ??
   "https://knox-007-backend.onrender.com";
 
 // 🔎 TEMP DEBUG — REMOVE AFTER CONFIRMATION
@@ -24,11 +23,9 @@ async function httpJson<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 /**
- * Backend currently returns a "contract payload" (decision/zones/trim/structure/flow/explain).
+ * Backend returns a "contract payload" (decision/zones/trim/structure/flow/explain).
  * UI expects: { snap: EngineSnapshot, out: EngineOutput }
- *
- * This adapter maps the backend payload -> UI contract.
- * Keep it conservative + fully populated so cards don't crash.
+ * This adapter maps backend payload -> UI contract.
  */
 function adaptBackendToUI(payload: any): EngineFetchResult {
   const t: string = String(payload?.ticker ?? "—").toUpperCase();
@@ -51,11 +48,10 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
   const stopPrice: number | null =
     zones?.stop?.price != null && Number.isFinite(Number(zones.stop.price)) ? Number(zones.stop.price) : null;
 
-  // We don't have true "last price" in backend yet.
-  // Use the first entry as a stable placeholder so UI renders.
+  // No real last price yet — use first entry as stable placeholder so UI renders.
   const approxPrice: number = entryPrices.length ? entryPrices[0] : 0;
 
-  // Take profits (tp1/tp2/tp3)
+  // Take profits
   const tpArr: number[] = Array.isArray(zones?.take_profit)
     ? zones.take_profit.map((z: any) => Number(z?.price)).filter((n: number) => Number.isFinite(n))
     : [];
@@ -64,7 +60,7 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
   const tp2 = tpArr[1] ?? null;
   const tp3 = tpArr[2] ?? null;
 
-  // ---------- SNAP (top-level dashboard-ish) ----------
+  // ---------- SNAP ----------
   const verdictRaw = String(decision?.state ?? "HOLD").toUpperCase();
   const verdict: "BUY" | "HOLD" | "WAIT" =
     verdictRaw === "BUY" ? "BUY" : verdictRaw === "WAIT" ? "WAIT" : "HOLD";
@@ -92,16 +88,15 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
     sizePct: Number(decision?.size_pct ?? 0),
     bullets,
 
-    // Trim card expects snap.trim.*
     trim: {
       tis,
       suggestedTrimPct: safeSuggestedTrimPct,
       nextWindow: safeNextWindow,
-      english: String(trim?.trim_box?.reason ?? trim?.trim_box?.Reason ?? "—"),
+      english: String(trim?.trim_box?.reason ?? "—"),
     },
   };
 
-  // ---------- OUT (detailed cards) ----------
+  // ---------- OUT ----------
   const bias = String(decision?.bias ?? "NEUTRAL").toUpperCase();
   const entryBias = bias === "BULLISH" || bias === "BEARISH" ? bias : "NEUTRAL";
 
@@ -109,11 +104,11 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
   const structureValid = Number.isFinite(structureHealth) ? structureHealth >= 0.55 : false;
 
   const runnerMode = Boolean(zones?.extension?.runner_mode);
-  const runnerProb = Math.round(Number(decision?.confidence ?? 0) * 100); // placeholder until model provides
+  const runnerProb = Math.round(Number(decision?.confidence ?? 0) * 100); // placeholder
 
   const out: any = {
     entry: {
-      entryBias: entryBias.toLowerCase(), // UI uses .toUpperCase() so ok
+      entryBias: entryBias.toLowerCase(),
       idealEntry:
         entryLow != null && entryHigh != null
           ? { low: entryLow, high: entryHigh, label: "ENTRY ZONE" }
@@ -163,38 +158,28 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
 }
 
 /**
- * Fetches the latest engine snapshot+output for a ticker.
- * Uses POST /v1/analyze (matches your current backend main.py).
+ * Fetch engine result for a ticker (canonical).
+ * POST /v1/analyze (your backend main.py)
  */
 export async function fetchEngine(
   ticker: string,
   baseUrl: string = DEFAULT_BASE_URL
 ): Promise<EngineFetchResult> {
   const t = ticker.trim().toUpperCase();
-
-  // ✅ correct backend endpoint
   const url = `${baseUrl.replace(/\/$/, "")}/v1/analyze`;
 
-  const res = await fetch(url, {
+  const payload = await httpJson<any>(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ticker: t }),
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status} ${res.statusText} :: ${text}`);
-  }
-
-  const payload = await res.json();
-
-  // ✅ IMPORTANT: adapt backend payload -> UI contract
   return adaptBackendToUI(payload);
 }
 
 /**
- * Health check.
- * Your backend has /api/health returning { ok: true }.
+ * Health check (your backend)
+ * GET /api/health -> { ok: true }
  */
 export async function fetchHealth(baseUrl: string = DEFAULT_BASE_URL): Promise<{ ok: boolean }> {
   const url = `${baseUrl.replace(/\/$/, "")}/api/health`;
