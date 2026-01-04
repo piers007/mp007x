@@ -3,7 +3,7 @@ import type { EngineSnapshot, EngineOutput } from "./types";
 const DEFAULT_BASE_URL =
   (import.meta as any).env?.VITE_KNOX_API_BASE ??
   (import.meta as any).env?.VITE_API_BASE ??
-  "http://localhost:8000";
+  "https://knox-007-backend.onrender.com";
 
 export type EngineFetchResult = {
   snap: EngineSnapshot;
