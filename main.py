@@ -43,7 +43,10 @@ def health() -> Dict[str, Any]:
         "ts": now_iso(),
     }
 
-
+@app.get("/api/health")
+def health():
+    return {"ok": True}
+    
 @app.get("/v1/schema")
 def schema() -> Dict[str, Any]:
     # Minimal schema descriptor (useful for UI sanity checks).
