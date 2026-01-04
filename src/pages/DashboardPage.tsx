@@ -20,10 +20,10 @@ export default function DashboardPage() {
       setSnap(res.snap);
       setOut(res.out);
     } catch (e: any) {
-      console.error("[Knox] fetchEngine error:", e);
-      setError("Load failed");
-      setSnap(null);
-      setOut(null);
+  console.error("[Knox] fetchEngine error:", e?.message ?? e, e?.stack ?? "");
+  setError("Load failed");
+  setSnap(null);
+  setOut(null);
     } finally {
       setLoading(false);
     }
