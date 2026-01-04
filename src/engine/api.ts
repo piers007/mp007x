@@ -1,4 +1,3 @@
-// src/engine/api.ts
 import type { EngineSnapshot, EngineOutput } from "./types";
 
 const DEFAULT_BASE_URL =
