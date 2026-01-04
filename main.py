@@ -63,7 +63,11 @@ def schema() -> Dict[str, Any]:
         ],
     }
 
-
+@app.post("/api/analyze")
+def analyze_alias(req: AnalyzeRequest) -> Dict[str, Any]:
+    # forward to canonical implementation
+    return analyze(req)
+    
 @app.post("/v1/analyze")
 def analyze(req: AnalyzeRequest) -> Dict[str, Any]:
     t = (req.ticker or "").strip().upper()
