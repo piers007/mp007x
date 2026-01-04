@@ -1,168 +1,169 @@
 // src/engine/types.ts
+// Knox 007 — Engine Contract Types
+// LOCKED compat layer to prevent TS drift between UI, mocks, and backend
 
-// ------------------------------
-// Core enums / primitives
-// ------------------------------
+/* =========================
+   Core Enums / Primitives
+========================= */
 
 export type Verdict = "BUY" | "HOLD" | "WAIT";
+export type Trend = "UP" | "DOWN" | "RANGE";
+export type Bias = "BULLISH" | "BEARISH" | "NEUTRAL";
 
-export type Strength = "HIGH" | "MED" | "LOW";
+/* =========================
+   Snapshot (Top-level UI)
+========================= */
 
-export type Side = "bid" | "ask";
-
-export type MomentumState =
-  | "ignition"
-  | "continuation"
-  | "exhaustion"
-  | "neutral";
-
-export type Trend =
-  | "bullish"
-  | "bearish"
-  | "neutral"
-  | "up"     // legacy
-  | "down";  // legacy
-
-// ------------------------------
-// Legacy compat shapes (for mocks)
-// ------------------------------
-
-export type RunnerCompat = {
-  probability: number;
-
-  /** legacy fields some mocks use */
-  runnerProbability?: number;
-  runnerMode?: boolean | string;
-};
-
-export type DeltaCompat = {
-  state: string;
-
-  /** legacy fields some mocks use (different casing in older mocks) */
-  KScore?: number;
-  Kscore?: number;
-};
-
-// ------------------------------
-// EngineSnapshot (home + legacy)
-// ------------------------------
-
-export type TrimSignal = {
-  /** Trim Intensity Score 0–100 */
-  tis: number;
-
-  /** Suggested trim % of initial position */
-  suggestedTrimPct: number;
-
-  /** Next trim window label */
-  nextWindow: string | null;
-
-  /** Human explanation */
-  english: string;
-
-  /** LEGACY (used by mock tests) */
-  mode?: string;
-};
-
-export type EngineSnapshot = {
+export interface EngineSnapshot {
   ticker: string;
-  verdict: Verdict;
-  headline: string;
   price: number;
+
+  verdict: Verdict;
   p_up: number;
   ev: number;
   tier: number;
   sizePct: number;
+
+  headline: string;
   bullets: string[];
+
+  // 🔒 Required by UI cards
   trim: TrimSignal;
 
-  // --------------------
-  // LEGACY SNAPSHOT FIELDS
-  // --------------------
+  // 🔒 Added for UI + mocks
   runner?: RunnerCompat;
   delta?: DeltaCompat;
-};
+}
 
-// ------------------------------
-// EngineOutput (expanded view)
-// ------------------------------
+/* =========================
+   Output (Detail Panels)
+========================= */
 
-export type PriceZone = {
-  low: number;
-  high: number;
-  label?: string | null;
-};
+export interface EngineOutput {
+  entry: EntryBlock;
+  structure: StructureBlock;
+  momentum: MomentumBlock;
+  liquidity: LiquidityBlock;
+  targets: TargetsBlock;
 
-export type EntryOutput = {
-  entryBias: string;
-  idealEntry: PriceZone | null;
-  invalidation: number | null;
+  // 🔒 Required by mocks
+  runner?: RunnerCompat;
+  delta?: DeltaCompat;
+}
+
+/* =========================
+   Entry
+========================= */
+
+export interface EntryBlock {
+  entryBias: Bias;
+  idealEntry?: {
+    low: number;
+    high: number;
+    label?: string;
+  };
+  invalidation?: number;
   english: string;
-};
+}
 
-export type TargetOutput = {
-  tp1: number | null;
-  tp2: number | null;
-  tp3: number | null;
-  massiveBreakout: boolean;
-  runnerProbability: number;
-  english: string;
-};
+/* =========================
+   Structure
+========================= */
 
-export type MomentumOutput = {
-  state: MomentumState;
-  sigmaRegime: string | null;
-  english: string;
-};
-
-export type StructureOutput = {
+export interface StructureBlock {
   structureValid: boolean;
   trend: Trend;
-  keyLevel: number | null;
+  keyLevel?: number;
   english: string;
-};
+}
 
-export type LiquidityShelf = {
-  side: Side;
-  price: number;
-  strength: number;
-};
+/* =========================
+   Momentum
+========================= */
 
-export type LiquidityWall = {
-  side: Side;
-  price: number;
-  strength: number;
-};
-
-export type LiquidityOutput = {
+export interface MomentumBlock {
+  state: "ignition" | "continuation" | "exhaustion" | "neutral";
+  sigmaRegime?: string;
   english: string;
-  shelves?: LiquidityShelf[];
-  walls?: LiquidityWall[];
-};
+}
 
-export type EngineOutput = {
-  structure: StructureOutput;
-  entry: EntryOutput;
-  momentum: MomentumOutput;
-  liquidity: LiquidityOutput;
-  targets: TargetOutput;
+/* =========================
+   Liquidity
+========================= */
 
-  // --------------------
-  // LEGACY OUTPUT FIELDS (mock uses these)
-  // --------------------
-  runner?: RunnerCompat;
-  delta?: DeltaCompat;
-};
+export interface LiquidityBlock {
+  english: string;
+  shelves?: Array<{
+    side: "bid" | "ask";
+    price: number;
+    strength: number;
+  }>;
+  walls?: Array<{
+    side: "bid" | "ask";
+    price: number;
+    strength: number;
+  }>;
+}
 
-// ------------------------------
-// Network + legacy aliases
-// ------------------------------
+/* =========================
+   Targets / Runner
+========================= */
 
-export type EngineFetchResult = {
-  snap: EngineSnapshot;
-  out: EngineOutput;
-};
+export interface TargetsBlock {
+  tp1?: number;
+  tp2?: number;
+  tp3?: number;
 
+  massiveBreakout: boolean;
+  runnerProbability: number;
+
+  english: string;
+}
+
+/* =========================
+   Trim
+========================= */
+
+export interface TrimSignal {
+  tis: number; // Trim Intensity Score
+  suggestedTrimPct: number;
+  nextWindow?: string;
+  english: string;
+
+  // 🔒 mocks include this
+  mode?: "TRIM" | "HOLD";
+}
+
+/* =========================
+   Runner (COMPAT)
+========================= */
+
+export interface RunnerCompat {
+  probability: number;
+
+  // 🔒 seen in mocks
+  runnerProbability?: number;
+  runnerMode?: boolean;
+  addOnPermission?: boolean;
+}
+
+/* =========================
+   Delta / Order Flow (COMPAT)
+========================= */
+
+export interface DeltaCompat {
+  state?: string;
+
+  // 🔒 both spellings supported to stop TS errors
+  KScore?: number;
+  Kscore?: number;
+}
+
+/* =========================
+   Backward Compatibility
+========================= */
+
+// Older UI imports this name
 export type AnalyzeResponse = {
   snap: EngineSnapshot;
   out: EngineOutput;
