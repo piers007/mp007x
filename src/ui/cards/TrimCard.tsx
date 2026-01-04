@@ -1,41 +1,39 @@
+// src/ui/cards/TrimCard.tsx
 import React from "react";
 import type { AnalyzeResponse } from "../../engine/types";
 
-export default function TrimCard({ snap }: { snap: AnalyzeResponse }) {
-  const t = snap.trim;
-  const fill = Math.max(0, Math.min(100, t.tis));
+type Props = { data: AnalyzeResponse };
 
-  const windowLabel =
-    t.next_trim_window_sec >= 60
-      ? `${Math.round(t.next_trim_window_sec / 60)}m`
-      : `${t.next_trim_window_sec}s`;
+export default function TrimCard({ data }: Props) {
+  const { snap } = data;
+  const tr = snap.trim;
+
+  const fillPct = Math.max(0, Math.min(100, tr.tis));
 
   return (
     <div className="knox-card">
       <div className="card-header">
-        <div className="card-title">Trim (TIS)</div>
-        <span className="badge purple">TIS {t.tis}</span>
+        <div className="card-title">Trim Intensity</div>
+        <div className={`badge ${tr.tis >= 60 ? "yellow" : "purple"}`}>TIS {tr.tis.toFixed(0)}%</div>
       </div>
 
       <div className="gauge">
-        <div className="fill" style={{ width: `${fill}%` }} />
+        <div className="fill" style={{ width: `${fillPct}%` }} />
       </div>
 
-      <div style={{ marginTop: 10, color: "var(--text-secondary)", fontSize: 13 }}>
-        Next Trim Window: <strong>{windowLabel}</strong>
-      </div>
+      <div style={{ marginTop: 10, color: "var(--text-secondary)", fontSize: 12 }}>{tr.english}</div>
 
-      {t.trim_box?.active && (
+      {tr.tis >= 60 ? (
         <div className="trim-overlay">
-          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Trim Suggested</div>
-          <div style={{ marginTop: 6, fontSize: 16, fontWeight: 700 }}>
-            {t.trim_box.suggested_trim_pct_of_initial.toFixed(0)}% of initial
+          <div style={{ fontWeight: 800, fontSize: 12 }}>TRIM BOX (TIS ≥ 60)</div>
+          <div style={{ marginTop: 6, fontSize: 12 }}>
+            Trim <b>{tr.suggestedTrimPct.toFixed(0)}%</b> of initial position
           </div>
           <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 12 }}>
-            {t.trim_box.reason}
+            Next window: {tr.nextWindow ?? "—"}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
