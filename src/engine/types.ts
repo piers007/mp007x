@@ -20,8 +20,24 @@ export type Trend =
   | "bullish"
   | "bearish"
   | "neutral"
-  | "up"        // legacy
-  | "down";     // legacy
+  | "up"     // legacy
+  | "down";  // legacy
+
+// ------------------------------
+// Legacy compat shapes (for mocks)
+// ------------------------------
+
+export type RunnerCompat = {
+  probability: number;
+  /** legacy field some mocks use */
+  runnerProbability?: number;
+};
+
+export type DeltaCompat = {
+  state: string;
+  /** legacy field some mocks use */
+  KScore?: number;
+};
 
 // ------------------------------
 // EngineSnapshot (home + legacy)
@@ -59,13 +75,8 @@ export type EngineSnapshot = {
   // --------------------
   // LEGACY SNAPSHOT FIELDS
   // --------------------
-  runner?: {
-    probability: number;
-  };
-
-  delta?: {
-    state: string;
-  };
+  runner?: RunnerCompat;
+  delta?: DeltaCompat;
 };
 
 // ------------------------------
@@ -131,6 +142,11 @@ export type EngineOutput = {
   momentum: MomentumOutput;
   liquidity: LiquidityOutput;
   targets: TargetOutput;
+
+  // --------------------
+  // LEGACY OUTPUT FIELD (mock uses out.runner)
+  // --------------------
+  runner?: RunnerCompat;
 };
 
 // ------------------------------
