@@ -1,3 +1,4 @@
+// src/engine/api.ts
 import type { EngineSnapshot, EngineOutput } from "./types";
 
 const DEFAULT_BASE_URL =
@@ -5,7 +6,7 @@ const DEFAULT_BASE_URL =
   (import.meta as any).env?.VITE_KNOX_API_BASE ??
   "https://knox-007-backend.onrender.com";
 
-// 🔎 TEMP DEBUG — REMOVE AFTER CONFIRMATION
+// 🔎 TEMP DEBUG — safe to keep until stable
 console.info("[Knox] API_BASE =", DEFAULT_BASE_URL);
 
 export type EngineFetchResult = {
@@ -13,22 +14,22 @@ export type EngineFetchResult = {
   out: EngineOutput;
 };
 
-async function httpJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status} ${res.statusText} :: ${text}`);
+async function safeReadText(res: Response): Promise<string> {
+  try {
+    return await res.text();
+  } catch {
+    return "";
   }
-  return (await res.json()) as T;
 }
 
 /**
- * Backend returns a "contract payload" (decision/zones/trim/structure/flow/explain).
+ * Backend currently returns a "contract payload"
  * UI expects: { snap: EngineSnapshot, out: EngineOutput }
+ *
  * This adapter maps backend payload -> UI contract.
  */
 function adaptBackendToUI(payload: any): EngineFetchResult {
-  const t: string = String(payload?.ticker ?? "—").toUpperCase();
+  const t: string = String(payload?.ticker ?? payload?.symbol ?? "—").toUpperCase();
 
   const decision = payload?.decision ?? {};
   const zones = payload?.zones ?? {};
@@ -39,21 +40,27 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
 
   // ---------- Prices ----------
   const entryPrices: number[] = Array.isArray(zones?.entry)
-    ? zones.entry.map((z: any) => Number(z?.price)).filter((n: number) => Number.isFinite(n))
+    ? zones.entry
+        .map((z: any) => Number(z?.price))
+        .filter((n: number) => Number.isFinite(n))
     : [];
 
   const entryLow = entryPrices.length ? Math.min(...entryPrices) : null;
   const entryHigh = entryPrices.length ? Math.max(...entryPrices) : null;
 
   const stopPrice: number | null =
-    zones?.stop?.price != null && Number.isFinite(Number(zones.stop.price)) ? Number(zones.stop.price) : null;
+    zones?.stop?.price != null && Number.isFinite(Number(zones.stop.price))
+      ? Number(zones.stop.price)
+      : null;
 
-  // No real last price yet — use first entry as stable placeholder so UI renders.
+  // We don't have true "last price" in backend yet.
   const approxPrice: number = entryPrices.length ? entryPrices[0] : 0;
 
-  // Take profits
+  // Take profits (tp1/tp2/tp3)
   const tpArr: number[] = Array.isArray(zones?.take_profit)
-    ? zones.take_profit.map((z: any) => Number(z?.price)).filter((n: number) => Number.isFinite(n))
+    ? zones.take_profit
+        .map((z: any) => Number(z?.price))
+        .filter((n: number) => Number.isFinite(n))
     : [];
 
   const tp1 = tpArr[0] ?? null;
@@ -87,12 +94,11 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
     tier: Number(decision?.tier ?? 0),
     sizePct: Number(decision?.size_pct ?? 0),
     bullets,
-
     trim: {
       tis,
       suggestedTrimPct: safeSuggestedTrimPct,
       nextWindow: safeNextWindow,
-      english: String(trim?.trim_box?.reason ?? "—"),
+      english: String(trim?.trim_box?.reason ?? trim?.trim_box?.Reason ?? "—"),
     },
   };
 
@@ -119,7 +125,6 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
           ? String(zones.entry[0]?.why ?? "Entry derived from engine zones.")
           : "No entry zones available.",
     },
-
     targets: {
       tp1,
       tp2,
@@ -131,13 +136,11 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
           ? "TP ladder derived from take_profit zones."
           : "No TP ladder available.",
     },
-
     momentum: {
       state: verdict === "BUY" ? "ignition" : verdict === "HOLD" ? "continuation" : "neutral",
       sigmaRegime: null,
       english: "Momentum state derived from decision state (placeholder until σ module is wired).",
     },
-
     structure: {
       structureValid,
       trend: bias === "BEARISH" ? "bearish" : bias === "BULLISH" ? "bullish" : "neutral",
@@ -146,10 +149,11 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
         structure?.exit_only_if ?? "—"
       )}`,
     },
-
     liquidity: {
       english: `OB: ${String(flow?.orderbook_state ?? "—")} • Δ: ${String(flow?.delta_state ?? "—")}`,
-      shelves: Array.isArray(flow?.liquidity_map?.absorption_shelves) ? flow.liquidity_map.absorption_shelves : [],
+      shelves: Array.isArray(flow?.liquidity_map?.absorption_shelves)
+        ? flow.liquidity_map.absorption_shelves
+        : [],
       walls: [],
     },
   };
@@ -158,8 +162,8 @@ function adaptBackendToUI(payload: any): EngineFetchResult {
 }
 
 /**
- * Fetch engine result for a ticker (canonical).
- * POST /v1/analyze (your backend main.py)
+ * Fetches engine result for a ticker (canonical).
+ * POST /v1/analyze (backend)
  */
 export async function fetchEngine(
   ticker: string,
@@ -168,20 +172,51 @@ export async function fetchEngine(
   const t = ticker.trim().toUpperCase();
   const url = `${baseUrl.replace(/\/$/, "")}/v1/analyze`;
 
-  const payload = await httpJson<any>(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ticker: t }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticker: t }),
+    });
+  } catch (e: any) {
+    // network-level failure (DNS, TLS, blocked, offline)
+    const msg = e?.message ? String(e.message) : String(e);
+    throw new Error(`[fetchEngine] Network error: ${msg}`);
+  }
 
+  const ct = res.headers.get("content-type") || "";
+  const rawText = await safeReadText(res);
+
+  if (!res.ok) {
+    throw new Error(`[fetchEngine] HTTP ${res.status} ${res.statusText} :: ${rawText}`);
+  }
+
+  // Some proxies/CDNs can return text/plain even when body is JSON.
+  // We'll parse from text if needed.
+  let payload: any;
+  try {
+    payload = ct.includes("application/json") ? JSON.parse(rawText || "{}") : JSON.parse(rawText || "{}");
+  } catch {
+    throw new Error(`[fetchEngine] JSON parse failed (ct=${ct}) :: ${rawText.slice(0, 400)}`);
+  }
+
+  // ✅ ALWAYS return UI contract
   return adaptBackendToUI(payload);
 }
 
 /**
- * Health check (your backend)
- * GET /api/health -> { ok: true }
+ * Health check.
+ * Backend: GET /api/health -> { ok: true }
  */
 export async function fetchHealth(baseUrl: string = DEFAULT_BASE_URL): Promise<{ ok: boolean }> {
   const url = `${baseUrl.replace(/\/$/, "")}/api/health`;
-  return await httpJson<{ ok: boolean }>(url, { method: "GET" });
+  const res = await fetch(url, { method: "GET" });
+  const text = await safeReadText(res);
+  if (!res.ok) throw new Error(`[fetchHealth] HTTP ${res.status} ${res.statusText} :: ${text}`);
+  try {
+    return JSON.parse(text) as { ok: boolean };
+  } catch {
+    return { ok: false };
+  }
 }
