@@ -6,9 +6,6 @@ const DEFAULT_BASE_URL =
   (import.meta as any).env?.VITE_KNOX_API_BASE ??
   "https://knox-007-backend.onrender.com";
 
-// 🔎 TEMP DEBUG — safe to keep until stable
-console.info("[Knox] API_BASE =", DEFAULT_BASE_URL);
-
 export type EngineFetchResult = {
   snap: EngineSnapshot;
   out: EngineOutput;
