@@ -1,11 +1,15 @@
-// src/app/App.tsx
 import React from "react";
-import DashboardPage from "../pages/DashboardPage";
+import { Routes, Route, Navigate } from "react-router-dom";
+
+import DashboardPage from "./pages/DashboardPage";
+import StockDetailPage from "./pages/StockDetailPage";
 
 export default function App() {
   return (
-    <div className="knox-shell">
-      <DashboardPage />
-    </div>
+    <Routes>
+      <Route path="/" element={<DashboardPage />} />
+      <Route path="/t/:ticker" element={<StockDetailPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
