@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchEngine } from "../engine/api";
 import type { EngineSnapshot, EngineOutput } from "../engine/types";
 import EngineCardStack from "../ui/EngineCardStack";
@@ -30,31 +31,27 @@ function parseCommand(raw: string): { cmd: "add" | "rm" | "none"; ticker?: strin
 }
 
 function scoreSnap(s?: EngineSnapshot | null): number {
-  // Higher score = better opportunity
   if (!s) return -9999;
-  const tier = Number.isFinite(s.tier) ? s.tier : 0;         // 1 best, 3 worse
+  const tier = Number.isFinite(s.tier) ? s.tier : 0;
   const pUp = Number.isFinite(s.p_up) ? s.p_up : 0;
   const ev = Number.isFinite(s.ev) ? s.ev : 0;
 
-  // Weighted scoring:
-  // - Tier dominates (lower tier better)
-  // - Then p_up, then EV
-  // Map tier: 1-> +3, 2-> +2, 3-> +1, else +0
   const tierBoost = tier === 1 ? 3 : tier === 2 ? 2 : tier === 3 ? 1 : 0;
-
   return tierBoost * 1000 + pUp * 100 + ev * 10;
 }
 
 export default function DashboardPage() {
+  const nav = useNavigate();
+
   const [query, setQuery] = useState<string>("");
-  const [active, setActive] = useState<string>(""); // active ticker
+  const [active, setActive] = useState<string>(""); // last analyzed ticker (optional)
   const [snap, setSnap] = useState<EngineSnapshot | null>(null);
   const [out, setOut] = useState<EngineOutput | null>(null);
   const [watch, setWatch] = useState<WatchItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function run(t: string) {
+  async function quickAnalyze(t: string) {
     const tt = normTicker(t);
     if (!tt) return;
 
@@ -67,7 +64,6 @@ export default function DashboardPage() {
       setOut(res.out);
       setActive(tt);
 
-      // cache latest snapshot in watchlist if present
       setWatch((prev) =>
         prev.map((w) =>
           w.ticker === tt ? { ...w, lastSnap: res.snap, lastOut: res.out, updatedAt: Date.now() } : w
@@ -88,8 +84,8 @@ export default function DashboardPage() {
     if (!tt) return;
 
     setWatch((prev) => {
-      if (prev.some((w) => w.ticker === tt)) return prev; // no duplicates
-      if (prev.length >= MAX_WATCH) return prev; // hard cap
+      if (prev.some((w) => w.ticker === tt)) return prev;
+      if (prev.length >= MAX_WATCH) return prev;
       return [...prev, { ticker: tt }];
     });
   }
@@ -112,7 +108,6 @@ export default function DashboardPage() {
 
     const parsed = parseCommand(raw);
 
-    // commands
     if (parsed.cmd === "add" && parsed.ticker) {
       addToWatch(parsed.ticker);
       setQuery("");
@@ -124,29 +119,25 @@ export default function DashboardPage() {
       return;
     }
 
-    // default: treat as ticker
-    run(raw);
+    // Default: treat as ticker → go to detail page
+    const t = normTicker(raw);
+    if (t) nav(`/t/${encodeURIComponent(t)}`);
     setQuery("");
   }
 
-  // Sorted watchlist (best opportunity first)
   const sortedWatch = useMemo(() => {
     const copy = [...watch];
     copy.sort((a, b) => scoreSnap(b.lastSnap) - scoreSnap(a.lastSnap));
     return copy;
   }, [watch]);
 
-  // Optional: preload default watch tickers (empty by default)
   useEffect(() => {
-    // Example: addToWatch("SEV");
-    // Keep blank in prod
+    // no defaults
   }, []);
 
   return (
     <div className="knox-shell">
-      {/* =========================
-          SECTION 1 — Ask Knox
-         ========================= */}
+      {/* SECTION 1 — Ask Knox */}
       <div className="knox-topbar">
         <div className="knox-title">
           <h1>Knox 007</h1>
@@ -171,14 +162,12 @@ export default function DashboardPage() {
             disabled={loading || !query.trim()}
             style={{ cursor: "pointer" }}
           >
-            Run
+            Go
           </button>
         </div>
       </div>
 
-      {/* =========================
-          SECTION 2 — Watchlist
-         ========================= */}
+      {/* SECTION 2 — Watchlist */}
       <div className="knox-card" style={{ marginBottom: 12 }}>
         <div className="card-header">
           <div className="card-title">Watchlist (≤ {MAX_WATCH})</div>
@@ -193,8 +182,6 @@ export default function DashboardPage() {
           <div style={{ display: "grid", gap: 10 }}>
             {sortedWatch.map((w) => {
               const s = w.lastSnap;
-
-              const isActive = w.ticker === active;
               const verdict = s?.verdict ?? "—";
               const pUp = s?.p_up != null ? Math.round(s.p_up * 100) : null;
               const tier = s?.tier ?? null;
@@ -206,13 +193,8 @@ export default function DashboardPage() {
                 <div
                   key={w.ticker}
                   className="watch-pill"
-                  style={{
-                    minWidth: "unset",
-                    width: "100%",
-                    borderColor: isActive ? "rgba(122,92,255,0.35)" : undefined,
-                    boxShadow: isActive ? "var(--shadow-focus)" : undefined,
-                  }}
-                  onClick={() => run(w.ticker)}
+                  style={{ minWidth: "unset", width: "100%" }}
+                  onClick={() => nav(`/t/${encodeURIComponent(w.ticker)}`)}
                 >
                   <div className="pill-row">
                     <div>
@@ -226,6 +208,20 @@ export default function DashboardPage() {
 
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div className={`badge ${badgeClass}`}>{verdict}</div>
+
+                      {/* Quick analyze (optional) */}
+                      <button
+                        className="badge"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          quickAnalyze(w.ticker);
+                        }}
+                        style={{ cursor: "pointer" }}
+                        aria-label={`Quick analyze ${w.ticker}`}
+                      >
+                        Analyze
+                      </button>
+
                       <button
                         className="badge"
                         onClick={(e) => {
@@ -246,7 +242,7 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     <div style={{ marginTop: 8, color: "var(--text-muted)", fontSize: 12 }}>
-                      Tap to analyze
+                      Tap to open detail • or Analyze to cache snapshot
                     </div>
                   )}
                 </div>
@@ -256,9 +252,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* =========================
-          STATUS / ERROR
-         ========================= */}
+      {/* STATUS / ERROR */}
       {loading && (
         <div className="knox-card">
           <div className="card-title">Loading…</div>
@@ -272,16 +266,14 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* =========================
-          Engine Cards (active ticker)
-         ========================= */}
+      {/* Optional quick preview stack (only if you used Analyze) */}
       {!loading && snap && out && <EngineCardStack data={{ snap, out }} />}
 
       {!loading && !snap && !error && (
         <div className="knox-card">
           <div className="card-title">No active ticker</div>
           <div style={{ color: "var(--text-muted)", fontSize: 12, marginTop: 6 }}>
-            Use the top bar to analyze a ticker, or add tickers to your watchlist with <b>/add</b>.
+            Use <b>/add</b> to build your watchlist, then tap a card to open detail.
           </div>
         </div>
       )}
