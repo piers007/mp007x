@@ -1,8 +1,8 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
-import DashboardPage from "./pages/DashboardPage";
-import StockDetailPage from "./pages/StockDetailPage";
+import DashboardPage from "../pages/DashboardPage";
+import StockDetailPage from "../pages/StockDetailPage";
 
 export default function App() {
   return (
