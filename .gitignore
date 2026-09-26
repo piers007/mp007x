@@ -1,5 +1,9 @@
 node_modules
 dist
+.venv
 .env
 .env.local
 .DS_Store
+__pycache__/
+*.pyc
+tsconfig.tsbuildinfo
